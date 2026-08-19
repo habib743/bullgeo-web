@@ -1,0 +1,556 @@
+﻿<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bull.Geo | Spatial Intelligence Platform</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- AOS Animation CSS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for Interactive OSM Map Background -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #0f172a;
+            overflow-x: hidden;
+            background-color: transparent;
+        }
+
+        /* INTRO LOADING OVERLAY */
+        #intro-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff; 
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .loader-logo-spin {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            animation: premiumSpin 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            filter: drop-shadow(0 15px 25px rgba(16, 185, 129, 0.2));
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes premiumSpin {
+            0% { transform: perspective(800px) rotateY(0deg); }
+            50% { transform: perspective(800px) rotateY(180deg); }
+            100% { transform: perspective(800px) rotateY(360deg); }
+        }
+
+        /* SECTION 1: LIVE MOTION GRAPHIC OSM BACKGROUND MAP (SEMARANG AREA) */
+        #osm-bg-map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -10;
+            opacity: 0.35;
+            pointer-events: none;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* SECTION 2 & BEYOND: MORPHING SHAPE ANIMATION EFFECTS (GIS / PETA THEME COLORED) */
+        .morphing-bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -15;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+        }
+
+        .morph-blob {
+            position: absolute;
+            filter: blur(60px);
+            opacity: 0.45;
+            animation: morphAnimation 12s ease-in-out infinite alternate;
+            mix-blend-mode: multiply;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 55vw;
+            height: 55vw;
+            background: #a7f3d0;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            animation-duration: 14s;
+        }
+
+        .blob-2 {
+            bottom: -15%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: #6ee7b7;
+            border-radius: 60% 40% 30% 70% / 50% 30% 70% 50%;
+            animation-duration: 10s;
+            animation-direction: alternate-reverse;
+        }
+
+        .blob-3 {
+            top: 35%;
+            left: 25%;
+            width: 40vw;
+            height: 40vw;
+            background: #d1fae5;
+            border-radius: 50% 50% 20% 80% / 25% 80% 20% 75%;
+            animation-duration: 18s;
+        }
+
+        @keyframes morphAnimation {
+            0% {
+                border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+                transform: translate(0px, 0px) scale(1) rotate(0deg);
+            }
+            50% {
+                border-radius: 60% 30% 50% 50% / 30% 60% 40% 70%;
+                transform: translate(40px, -50px) scale(1.1) rotate(90deg);
+            }
+            100% {
+                border-radius: 30% 60% 70% 40% / 50% 40% 60% 50%;
+                transform: translate(-30px, 40px) scale(0.95) rotate(180deg);
+            }
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .fake-3d-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.04), 0 5px 15px rgba(0, 0, 0, 0.02);
+            transform: perspective(1000px) translateZ(0px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fake-3d-card:hover {
+            transform: perspective(1000px) translateY(-8px) translateZ(15px);
+            border-color: #cbd5e1;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.1);
+        }
+
+        .icon-float {
+            animation: iconFloat 3.5s ease-in-out infinite;
+        }
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .workflow-card {
+            background: #ffffff;
+            border: 1px solid transparent;
+            border-radius: 1.5rem;
+            padding: 2rem 1.5rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 2;
+        }
+        .workflow-card:hover {
+            transform: translateY(-8px);
+            background: #ffffff;
+            border-color: #a7f3d0;
+            box-shadow: 0 20px 40px -10px rgba(16, 185, 129, 0.12);
+        }
+        .workflow-number {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .workflow-card:hover .workflow-number {
+            background-color: #10b981;
+            color: #ffffff;
+            transform: scale(1.15) rotate(6deg);
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+            border-color: #10b981;
+        }
+        .workflow-line-anim {
+            background-image: linear-gradient(90deg, #34d399 50%, transparent 50%);
+            background-size: 20px 2px;
+            animation: march 1.5s linear infinite;
+        }
+        @keyframes march {
+            0% { background-position: 0px 0; }
+            100% { background-position: 20px 0; }
+        }
+
+        .tilt-container {
+            transition: transform 0.1s ease-out;
+            transform-style: preserve-3d;
+        }
+    </style>
+</head>
+<body class="antialiased" id="mainBody">
+
+    <!-- INTRO LOADING OVERLAY -->
+    <div id="intro-loader">
+        <img src="logo.jpg-removebg-preview.png" alt="Bull.Geo Loading" class="loader-logo-spin">
+        <div class="text-center">
+            <h3 class="text-gray-900 text-xl font-bold tracking-widest uppercase mb-1">Bull.Geo</h3>
+            <p class="text-emerald-600 text-xs font-medium tracking-wider animate-pulse">Loading GIS Engine...</p>
+        </div>
+    </div>
+
+    <!-- BACKGROUND EFFECTS: SEMARANG OSM MAP & MORPHING ANIMATIONS -->
+    <div id="osm-bg-map"></div>
+    <div class="morphing-bg-container">
+        <div class="morph-blob blob-1"></div>
+        <div class="morph-blob blob-2"></div>
+        <div class="morph-blob blob-3"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="fixed w-full z-50 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="flex justify-between items-center h-24">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 flex items-center justify-center">
+                        <img src="logo.jpg-removebg-preview.png" alt="Bull.Geo Logo" class="h-full w-full object-contain filter drop-shadow-sm">
+                    </div>
+                    <h3 class="font-extrabold text-2xl tracking-tight text-gray-900">Bull.Geo</h3>
+                </div>
+                
+                <div class="hidden md:flex space-x-8">
+                    <a href="#services" class="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors">Layanan</a>
+                    <a href="#demo" class="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors">Demo</a>
+                    <a href="#pricing" class="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors">Harga</a>
+                    <a href="#workflow" class="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors">Alur Kerja</a>
+                </div>
+
+                <a href="https://wa.me/62895372516400" target="_blank" rel="noopener noreferrer" class="hidden md:inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all shadow-md">
+                    Konsultasi WhatsApp
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="pt-40 pb-20 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[90vh]">
+        <div data-aos="fade-up" data-aos-duration="800">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 mb-6 border border-emerald-200 text-xs font-semibold tracking-wider text-emerald-700 uppercase rounded-full bg-emerald-50 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Spatial Intelligence & GIS Analytics
+            </div>
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 leading-[1.15] mb-6">
+                Data Spasial Presisi untuk Ritel, F&B, OOH, dan Logistik.
+            </h1>
+            <p class="text-lg text-gray-600 mb-8 leading-relaxed max-w-lg">
+                Solusi spasial komprehensif untuk mengoptimalkan rute logistik, memvaluasi titik billboard OOH, mencegah kanibalisasi F&B, hingga memastikan ekspansi gerai ritel berbasis data akurat tanpa spekulasi.
+            </p>
+            <div class="flex flex-wrap gap-4">
+                <a href="https://wa.me/62895372516400" target="_blank" rel="noopener noreferrer" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3.5 px-7 rounded-xl transition-all shadow-md">Chat WhatsApp</a>
+                <a href="#demo" class="bg-white border border-gray-300 hover:border-gray-400 text-gray-900 font-medium py-3.5 px-7 rounded-xl transition-all shadow-sm">Lihat Live Demo</a>
+            </div>
+        </div>
+        
+        <div data-aos="fade-left" data-aos-duration="1000" class="relative">
+            <div id="tiltCard" class="tilt-container fake-3d-card p-8 rounded-3xl relative z-10">
+                <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+                    <span class="text-xs font-bold text-gray-400 tracking-widest uppercase">Operational Snapshot</span>
+                    <span class="flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping"></span> Active System
+                    </span>
+                </div>
+                
+                <div class="space-y-5">
+                    <div class="p-5 bg-gradient-to-br from-gray-50 to-white border border-gray-100 rounded-2xl shadow-sm">
+                        <div class="text-4xl font-black text-gray-900 mb-1">16.5%</div>
+                        <div class="text-sm font-medium text-gray-500">Penghematan BBM Solar (Logistik)</div>
+                    </div>
+                    <div class="p-5 bg-gradient-to-br from-gray-50 to-white border border-gray-100 rounded-2xl shadow-sm">
+                        <div class="text-4xl font-black text-gray-900 mb-1">0 Risiko</div>
+                        <div class="text-sm font-medium text-gray-500">Konflik Aturan Tata Kota (Ritel & F&B)</div>
+                    </div>
+                    <div class="p-5 bg-gradient-to-br from-gray-50 to-white border border-gray-100 rounded-2xl shadow-sm">
+                        <div class="text-4xl font-black text-gray-900 mb-1">3D Audit</div>
+                        <div class="text-sm font-medium text-gray-500">Jarak Pandang Bebas Halangan (OOH)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES SECTION -->
+    <section id="services" class="py-24 bg-white/95 backdrop-blur-md border-t border-gray-200/60">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="max-w-2xl mb-16" data-aos="fade-up">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">Fokus pada 4 Sektor Enterprise.</h2>
+                <p class="text-lg text-gray-600">Analisis berbasis data riil untuk memastikan setiap keputusan operasional dan ekspansi Anda tepat sasaran.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div data-aos="fade-up" data-aos-delay="100" class="fake-3d-card p-8 rounded-3xl flex flex-col h-full">
+                    <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 icon-float border border-emerald-100 shadow-sm text-emerald-600">🛍️</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Ritel & Ekspansi Toko</h3>
+                    <p class="text-gray-600 mb-6 flex-grow">Pemetaan Jangkauan Pembeli (5–10 Menit), Cek Aturan Tata Kota / Zonasi RDTR, dan Analisis Daya Beli Kawasan.</p>
+                    <a href="https://wa.me/62895372516400?text=Halo%20Bull.Geo,%20saya%20tertarik%20konsultasi%20Jasa%20Analisis%20Lokasi%20Retail." target="_blank" rel="noopener noreferrer" class="inline-flex w-fit items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                        Konsultasi Ritel &rarr;
+                    </a>
+                </div>
+                <div data-aos="fade-up" data-aos-delay="200" class="fake-3d-card p-8 rounded-3xl flex flex-col h-full">
+                    <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 icon-float border border-emerald-100 shadow-sm text-emerald-600" style="animation-delay: 0.5s;">🍔</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">F&B Multi-Outlet</h3>
+                    <p class="text-gray-600 mb-6 flex-grow">Proteksi Rebutan Pembeli Antar-Cabang (Kanibalisasi Pasar), dan Analisis Radius Pengantaran Online (3-5 KM).</p>
+                    <a href="https://wa.me/62895372516400?text=Halo%20Bull.Geo,%20saya%20tertarik%20konsultasi%20Jasa%20Lokasi%20F%26B." target="_blank" rel="noopener noreferrer" class="inline-flex w-fit items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                        Konsultasi F&B &rarr;
+                    </a>
+                </div>
+                <div data-aos="fade-up" data-aos-delay="300" class="fake-3d-card p-8 rounded-3xl flex flex-col h-full">
+                    <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 icon-float border border-emerald-100 shadow-sm text-emerald-600" style="animation-delay: 1s;">📢</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Media Luar Ruang (OOH)</h3>
+                    <p class="text-gray-600 mb-6 flex-grow">Analisis Sudut Pandang Pengendara 3D, Cek Halangan Pohon/Gedung, dan Hitung Estimasi Keramaian Lalu Lintas Harian.</p>
+                    <a href="https://wa.me/62895372516400?text=Halo%20Bull.Geo,%20saya%20tertarik%20konsultasi%20Jasa%20Valuasi%20OOH%20Billboard." target="_blank" rel="noopener noreferrer" class="inline-flex w-fit items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                        Konsultasi OOH &rarr;
+                    </a>
+                </div>
+                <div data-aos="fade-up" data-aos-delay="400" class="fake-3d-card p-8 rounded-3xl flex flex-col h-full">
+                    <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-3xl mb-6 icon-float border border-emerald-100 shadow-sm text-emerald-600" style="animation-delay: 1.5s;">🚚</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Logistik & Rute Armada</h3>
+                    <p class="text-gray-600 mb-6 flex-grow">Penentuan Jalur Bebas Tanjakan Ekstrem (Hemat Solar 16.5%), Alokasi Biaya Tol, Feri, dan SPBU Fleet Card.</p>
+                    <a href="https://wa.me/62895372516400?text=Halo%20Bull.Geo,%20saya%20tertarik%20konsultasi%20Jasa%20Optimasi%20Rute%20Logistik." target="_blank" rel="noopener noreferrer" class="inline-flex w-fit items-center text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                        Konsultasi Logistik &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIVE DEMO SECTION: LIST PILIHAN AMAN (BUKA TAB BARU) -->
+    <section id="demo" class="py-24 bg-slate-900 text-white">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 text-center" data-aos="zoom-in">
+            <h2 class="text-3xl font-bold mb-4">Uji Coba Simulator Spasial Kami</h2>
+            <p class="text-lg text-slate-400 mb-12 max-w-2xl mx-auto">Pilih salah satu live demo di bawah untuk membuka simulasi peta interaktif di tab baru yang aman.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                
+                <div class="fake-3d-card bg-slate-800 border border-slate-700 p-8 rounded-3xl text-left flex flex-col justify-between hover:border-emerald-500 transition-all">
+                    <div>
+                        <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center text-2xl mb-4 border border-emerald-500/20">🚚</div>
+                        <span class="text-xs font-bold text-emerald-400 tracking-wider uppercase">Live demo 01</span>
+                        <h3 class="text-2xl font-bold text-white mt-1 mb-3">Logistik</h3>
+                        <p class="text-slate-400 text-sm mb-6">Simulasi rute armada efisien, perhitungan elevasi tanjakan, dan alokasi biaya koridor logistik antarkota (Jakarta-Bali).</p>
+                    </div>
+                    <a href="https://habib743.github.io/GeoAI_Real_Road_Route_BullGeo/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full py-3.5 px-6 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all shadow-md">
+                        Buka Demo Logistik &rarr;
+                    </a>
+                </div>
+
+                <div class="fake-3d-card bg-slate-800 border border-slate-700 p-8 rounded-3xl text-left flex flex-col justify-between hover:border-emerald-500 transition-all">
+                    <div>
+                        <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center text-2xl mb-4 border border-emerald-500/20">📍</div>
+                        <span class="text-xs font-bold text-emerald-400 tracking-wider uppercase">Live demo 02</span>
+                        <h3 class="text-2xl font-bold text-white mt-1 mb-3">Location Intelligence</h3>
+                        <p class="text-slate-400 text-sm mb-6">Analisis kelayakan ekspansi F&B dan ritel berbasis AHP, matriks *Multi-Criteria Decision Analysis*, serta mitigasi kanibalisasi pasar.</p>
+                    </div>
+                    <a href="https://habib743.github.io/GeoAI-Location-Intelligence/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full py-3.5 px-6 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all shadow-md">
+                        Buka Location Intelligence &rarr;
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING SECTION -->
+    <section id="pricing" class="py-24 bg-white/95 backdrop-blur-md border-t border-gray-200/60">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16" data-aos="fade-up">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">Investasi Terukur, Tanpa Biaya Tersembunyi.</h2>
+                <p class="text-lg text-gray-600">Pilih paket audit berdasarkan sektor bisnis Anda. Semua output disampaikan dalam bahasa bisnis yang mudah dieksekusi.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div data-aos="fade-up" data-aos-delay="100" class="fake-3d-card p-8 rounded-3xl flex flex-col">
+                    <div class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Paket Ritel</div>
+                    <div class="text-3xl font-bold text-gray-900 mb-6">Rp 500rb<span class="text-sm font-normal text-gray-500">/ Audit</span></div>
+                    <ul class="space-y-4 mb-8 flex-grow text-sm text-gray-600">
+                        <li class="flex gap-2"><span>&check;</span> 1 Target Lokasi Ruko</li>
+                        <li class="flex gap-2"><span>&check;</span> Jangkauan Pembeli (5-10 mnt)</li>
+                        <li class="flex gap-2"><span>&check;</span> Cek Aturan Tata Kota (Zonasi)</li>
+                        <li class="flex gap-2"><span>&check;</span> Laporan Eksekutif PDF</li>
+                    </ul>
+                    <a href="https://wa.me/62895372516400?text=Pesan%20Paket%20Ritel" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-3 px-4 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors">Pilih Paket</a>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="200" class="fake-3d-card p-8 rounded-3xl flex flex-col relative border-emerald-500 shadow-lg" style="border-width: 2px;">
+                    <div class="absolute top-0 right-6 -translate-y-1/2 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Popular</div>
+                    <div class="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-2">Paket F&B</div>
+                    <div class="text-3xl font-bold text-gray-900 mb-6">Rp 1 Juta<span class="text-sm font-normal text-gray-500">/ Audit</span></div>
+                    <ul class="space-y-4 mb-8 flex-grow text-sm text-gray-600">
+                        <li class="flex gap-2"><span>&check;</span> 1 Outlet Baru + Cek Cabang Lama</li>
+                        <li class="flex gap-2"><span>&check;</span> Proteksi Kanibalisasi Pasar</li>
+                        <li class="flex gap-2"><span>&check;</span> Radius Delivery (3-5 KM)</li>
+                        <li class="flex gap-2"><span>&check;</span> Peta Interaktif & PDF</li>
+                    </ul>
+                    <a href="https://wa.me/62895372516400?text=Pesan%20Paket%20F%26B" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-3 px-4 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors">Pilih Paket</a>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="300" class="fake-3d-card p-8 rounded-3xl flex flex-col">
+                    <div class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Paket OOH</div>
+                    <div class="text-3xl font-bold text-gray-900 mb-6">Rp 1.5 Juta<span class="text-sm font-normal text-gray-500">/ Titik</span></div>
+                    <ul class="space-y-4 mb-8 flex-grow text-sm text-gray-600">
+                        <li class="flex gap-2"><span>&check;</span> 1 Titik Billboard/Baliho</li>
+                        <li class="flex gap-2"><span>&check;</span> Pandangan Pengendara 3D</li>
+                        <li class="flex gap-2"><span>&check;</span> Data Keramaian Lalu Lintas</li>
+                        <li class="flex gap-2"><span>&check;</span> Laporan Evaluasi Sewa PDF</li>
+                    </ul>
+                    <a href="https://wa.me/62895372516400?text=Pesan%20Paket%20OOH" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-3 px-4 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors">Pilih Paket</a>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="400" class="fake-3d-card p-8 rounded-3xl flex flex-col">
+                    <div class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Paket Logistik</div>
+                    <div class="text-3xl font-bold text-gray-900 mb-6">Rp 2 Juta<span class="text-sm font-normal text-gray-500">/ Koridor</span></div>
+                    <ul class="space-y-4 mb-8 flex-grow text-sm text-gray-600">
+                        <li class="flex gap-2"><span>&check;</span> 1 Koridor Rute Antarkota</li>
+                        <li class="flex gap-2"><span>&check;</span> Jalur Bebas Tanjakan Ekstrem</li>
+                        <li class="flex gap-2"><span>&check;</span> Hitung Biaya Tol & Feri</li>
+                        <li class="flex gap-2"><span>&check;</span> Simulator Interaktif & Data Vektor</li>
+                    </ul>
+                    <a href="https://wa.me/62895372516400?text=Pesan%20Paket%20Logistik" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-3 px-4 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors">Pilih Paket</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WORKFLOW SECTION ANIMATED -->
+    <section id="workflow" class="py-24 bg-white/95 backdrop-blur-md border-t border-gray-200/60 overflow-hidden relative">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 relative">
+            <h2 class="text-3xl font-bold text-gray-900 text-center mb-16" data-aos="fade-up">4 Langkah Kerja Sederhana</h2>
+            
+            <div class="hidden md:block absolute top-[110px] left-[15%] right-[15%] h-[2px] workflow-line-anim z-0 opacity-50"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+                <div class="workflow-card text-center" data-aos="fade-up" data-aos-delay="100">
+                    <div class="workflow-number w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-emerald-600 mx-auto mb-5 border border-emerald-100 shadow-sm">1</div>
+                    <h4 class="font-bold text-gray-900 mb-2 text-lg">Input Data</h4>
+                    <p class="text-sm text-gray-600">Kirim titik lokasi atau masalah bisnis Anda via WhatsApp.</p>
+                </div>
+                <div class="workflow-card text-center" data-aos="fade-up" data-aos-delay="200">
+                    <div class="workflow-number w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-emerald-600 mx-auto mb-5 border border-emerald-100 shadow-sm">2</div>
+                    <h4 class="font-bold text-gray-900 mb-2 text-lg">Komputasi Spasial</h4>
+                    <p class="text-sm text-gray-600">Pemrosesan data rute, zonasi, dan visibilitas di Google Colab.</p>
+                </div>
+                <div class="workflow-card text-center" data-aos="fade-up" data-aos-delay="300">
+                    <div class="workflow-number w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-emerald-600 mx-auto mb-5 border border-emerald-100 shadow-sm">3</div>
+                    <h4 class="font-bold text-gray-900 mb-2 text-lg">Kirim Dokumen</h4>
+                    <p class="text-sm text-gray-600">Menerima Peta Interaktif & Laporan Eksekutif (Word/PDF).</p>
+                </div>
+                <div class="workflow-card text-center" data-aos="fade-up" data-aos-delay="400">
+                    <div class="workflow-number w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-emerald-600 mx-auto mb-5 border border-emerald-100 shadow-sm">4</div>
+                    <h4 class="font-bold text-gray-900 mb-2 text-lg">Konsultasi Hasil</h4>
+                    <p class="text-sm text-gray-600">Diskusi langsung untuk pengambilan keputusan bisnis yang tepat.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-gray-200 py-12">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="h-8 w-8 flex items-center justify-center">
+                    <img src="logo.jpg-removebg-preview.png" alt="Bull.Geo Logo" class="h-full w-full object-contain filter drop-shadow-sm">
+                </div>
+                <h3 class="font-bold text-xl text-gray-900 tracking-tight">Bull.Geo</h3>
+            </div>
+
+            <div class="flex gap-6 text-sm text-gray-600">
+                <a href="mailto:bulloh.geograf@gamil.com" class="hover:text-gray-900">bulloh.geograf@gamil.com</a>
+                <a href="https://www.linkedin.com/company/bull-geo/?viewAsMember=true" target="_blank" rel="noopener noreferrer" class="hover:text-gray-900">LinkedIn</a>
+                <a href="https://www.instagram.com/bull.geo" target="_blank" rel="noopener noreferrer" class="hover:text-gray-900">IG @bull.geo</a>
+            </div>
+            <div class="text-sm text-gray-500">
+                &copy; 2026 Bull.Geo. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Leaflet & AOS JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('intro-loader');
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 800);
+            }, 1500);
+        });
+
+        AOS.init({
+            once: true,
+            offset: 50,
+        });
+
+        // INISIALISASI LIVE MOTION GRAPHIC OSM MAP BACKGROUND (SEMARANG THEME)
+        const bgMap = L.map('osm-bg-map', {
+            center: [-6.993, 110.42],
+            zoom: 12,
+            zoomControl: false,
+            attributionControl: false,
+            dragging: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false,
+            boxZoom: false
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            subdomains: 'abcd'
+        }).addTo(bgMap);
+
+        // Motion Graphic pergerakan peta otomatis
+        let currentLng = 110.42;
+        setInterval(() => {
+            currentLng += 0.001;
+            bgMap.setView([-6.993, currentLng], 12, { animate: true, duration: 1.5 });
+        }, 3000);
+
+        // Interaksi Mouse Parallax pada background peta & morphing shapes
+        document.addEventListener('mousemove', (e) => {
+            const mapElement = document.getElementById('osm-bg-map');
+            const xOffset = (window.innerWidth / 2 - e.clientX) / 40;
+            const yOffset = (window.innerHeight / 2 - e.clientY) / 40;
+            if(mapElement) {
+                mapElement.style.transform = `translate(${xOffset}px, ${yOffset}px) scale(1.03)`;
+            }
+        });
+
+        const card = document.getElementById('tiltCard');
+        document.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 45;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
+            if(card) {
+                card.style.transform = `perspective(1000px) rotateY(${xAxis}deg) rotateX(${yAxis}deg) translateZ(15px)`;
+            }
+        });
+
+        document.addEventListener('mouseleave', () => {
+            if(card) {
+                card.style.transform = `perspective(1000px) rotateY(0deg) rotateX(0deg) translateZ(0px)`;
+            }
+        });
+    </script>
+</body>
+</html>
